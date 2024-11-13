@@ -16,6 +16,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController =
       TextEditingController(); // Added password controller
+  final TextEditingController _addressController =
+      TextEditingController(); // Added address controller
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   bool _isLoading = false;
   String? userId; // Variable to store userId
@@ -23,30 +25,49 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSettings(); // Load settings from secure storage
+    _loadUserId(); // Load userId from secure storage and fetch user data
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadUserId() async {
+    userId = await _secureStorage.read(key: 'userId');
+    if (userId != null) {
+      await _fetchUserData(userId!); // Fetch user data after getting userId
+    }
+  }
+
+  Future<void> _fetchUserData(String id) async {
     setState(() {
       _isLoading = true;
     });
     try {
-      // Retrieve userId from secure storage
-      userId = await _secureStorage.read(key: 'userId');
+      // Retrieve the authentication token from secure storage
+      String? token = await _secureStorage.read(key: 'token');
 
-      String? storedFullName = await _secureStorage.read(key: 'fullName');
-      String? storedEmail = await _secureStorage.read(key: 'email');
-      if (storedFullName != null) {
-        _fullNameController.text =
-            storedFullName; // Set initial value for full name
-      }
-      if (storedEmail != null) {
-        _emailController.text = storedEmail; // Set initial value for email
+      final response = await http.get(
+        Uri.parse(
+            'http://10.0.2.2:5000/api/users/$id'), // Update with your API URL
+        headers: {
+          'Authorization':
+              'Bearer $token', // Add token to the Authorization header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // Assuming the response body contains fields 'fullName', 'email', and 'address'
+        _fullNameController.text = data['fullName'] ?? '';
+        _emailController.text = data['email'] ?? '';
+        _addressController.text = data['address'] ?? '';
+      } else {
+        // Handle error response from the server
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load user data: ${response.body}')),
+        );
       }
     } catch (e) {
       // Handle error
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load settings')),
+        SnackBar(content: Text('Failed to load user data')),
       );
     } finally {
       setState(() {
@@ -80,7 +101,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
       // Prepare data for the API request
       final url =
-          'http://localhost:5000/api/users/$userId'; // Update with your API URL
+          'http://10.0.2.2:5000/api/users/$userId'; // Update with your API URL
       final response = await http.put(
         Uri.parse(url),
         headers: {
@@ -94,6 +115,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           'password': _passwordController.text.isNotEmpty
               ? _passwordController.text
               : null, // Include password only if provided
+          'address': _addressController.text, // Include address in the request
         }),
       );
 
@@ -127,7 +149,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pengaturan Akun'),
+        title: Text('Pengaturan Akun',
+            style: TextStyle(
+              fontWeight: FontWeight.bold, // Set the font weight to bold
+            )),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -137,33 +163,63 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               controller: _fullNameController,
               decoration: InputDecoration(
                 labelText: 'Nama Lengkap',
+                labelStyle:
+                    TextStyle(fontWeight: FontWeight.bold), // Set label to bold
                 border: OutlineInputBorder(),
               ),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold), // Set input text to bold
             ),
             SizedBox(height: 16.0),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
                 labelText: 'Email',
+                labelStyle:
+                    TextStyle(fontWeight: FontWeight.bold), // Set label to bold
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.emailAddress,
+              style: TextStyle(
+                  fontWeight: FontWeight.bold), // Set input text to bold
+            ),
+            SizedBox(height: 16.0),
+            TextField(
+              controller: _addressController, // Added address field
+              decoration: InputDecoration(
+                labelText: 'Alamat',
+                labelStyle:
+                    TextStyle(fontWeight: FontWeight.bold), // Set label to bold
+                border: OutlineInputBorder(),
+              ),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold), // Set input text to bold
             ),
             SizedBox(height: 16.0),
             TextField(
               controller: _passwordController, // Added password field
               decoration: InputDecoration(
                 labelText: 'Password (optional)',
+                labelStyle:
+                    TextStyle(fontWeight: FontWeight.bold), // Set label to bold
                 border: OutlineInputBorder(),
               ),
               obscureText: true, // Hide password input
+              style: TextStyle(
+                  fontWeight: FontWeight.bold), // Set input text to bold
             ),
             SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: _isLoading ? null : _saveSettings,
               child: _isLoading
                   ? CircularProgressIndicator(color: Colors.white)
-                  : Text('Simpan'),
+                  : Text(
+                      'Simpan',
+                      style: TextStyle(
+                        fontWeight:
+                            FontWeight.bold, // Set the font weight to bold
+                      ),
+                    ),
             ),
           ],
         ),

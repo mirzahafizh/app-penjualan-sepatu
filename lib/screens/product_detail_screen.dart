@@ -51,7 +51,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _fetchProduct() async {
-    final url = 'http://192.168.1.6:5000/api/produk-sepatu/${widget.id}';
+    final url = 'http://10.0.2.2:5000/api/produk-sepatu/${widget.id}';
 
     try {
       final response = await http.get(
@@ -80,7 +80,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _fetchComments() async {
     final url =
-        'http://192.168.1.6:5000/api/comments/product/${widget.id}'; // Adjust endpoint as necessary
+        'http://10.0.2.2:5000/api/comments/product/${widget.id}'; // Adjust endpoint as necessary
 
     try {
       final response = await http.get(
@@ -112,8 +112,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> addToCart(BuildContext context) async {
-    final url =
-        'http://192.168.1.6:5000/api/keranjang'; // Endpoint to add to cart
+    final url = 'http://10.0.2.2:5000/api/keranjang'; // Endpoint to add to cart
     final body = json.encode({
       'userId': userId,
       'produkSepatuId': widget.id,
@@ -145,7 +144,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> addToWishlist(BuildContext context) async {
     final url =
-        'http://192.168.1.6:5000/api/wishlist'; // Endpoint to add to wishlist
+        'http://10.0.2.2:5000/api/wishlist'; // Endpoint to add to wishlist
 
     final body = json.encode({
       'userId': userId,
@@ -234,7 +233,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     'Harga: Rp ${NumberFormat('#,##0').format(product['harga'] ?? 0)}', // Format the price
                     style: TextStyle(fontSize: 16),
                   ),
-                  SizedBox(height: 16),
+                  const Divider(color: Colors.grey, thickness: 1),
+                  SizedBox(height: 2), // Add some space after size selection
+                  Text(
+                    product['deskripsi'] ?? 'No description available',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const Divider(color: Colors.grey, thickness: 1),
+
+                  SizedBox(height: 4),
 
                   // Size Selection using Horizontal Boxes
                   Text(
@@ -278,17 +285,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       );
                     }).toList(),
                   ),
-                  SizedBox(height: 16), // Add some space after size selection
-                  Text(
-                    product['deskripsi'] ?? 'No description available',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 24),
+                  const Divider(color: Colors.grey, thickness: 1),
+
+                  SizedBox(height: 8),
                   Text(
                     'Komentar:',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: 2),
                   ListView.builder(
                     physics: NeverScrollableScrollPhysics(),
                     shrinkWrap: true,

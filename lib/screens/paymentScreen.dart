@@ -45,7 +45,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<void> _processPayment(BuildContext context) async {
     try {
-      final url = Uri.parse('http://192.168.1.6:5000/midtrans/payment');
+      final url = Uri.parse('http://10.0.2.2:5000/midtrans/payment');
       final totalAmount = calculateTotalAmount(widget.items);
       final orderId = 'order_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -136,7 +136,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     };
 
     final url = Uri.parse(
-        'http://192.168.1.6:5000/api/transaksi'); // Adjust your API endpoint accordingly
+        'http://10.0.2.2:5000/api/transaksi'); // Adjust your API endpoint accordingly
 
     // Log the values before sending the request
     print('Sending transaction: $productDetails');
@@ -179,7 +179,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     final url =
-        Uri.parse('http://192.168.1.6:5000/midtrans/check?orderId=$_orderId');
+        Uri.parse('http://10.0.2.2:5000/midtrans/check?orderId=$_orderId');
 
     try {
       final response = await http.get(url);
@@ -241,7 +241,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     for (var item in widget.items) {
       final id = item['id']; // Adjust this to the actual cart item ID field
 
-      final url = Uri.parse('http://192.168.1.6:5000/api/keranjang/$id');
+      final url = Uri.parse('http://10.0.2.2:5000/api/keranjang/$id');
 
       try {
         final response = await http.delete(url);
@@ -263,7 +263,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Payment'),
+        title:
+            Text('Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -271,7 +273,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Total Amount: ${formatRupiah(calculateTotalAmount(widget.items))}',
+              'Total Harga: ${formatRupiah(calculateTotalAmount(widget.items))}',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
@@ -280,42 +282,94 @@ class _PaymentScreenState extends State<PaymentScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            // Displaying the list of items with names and sizes
+            // Displaying the list of items with names, sizes, and images
             Expanded(
               child: ListView.builder(
                 itemCount: widget.items.length,
                 itemBuilder: (context, index) {
                   final item = widget.items[index];
-                  final produkSepatu = item['produkSepatu'];
-
-                  // Use null-aware operators to safely access properties
-                  final name = produkSepatu != null &&
-                          produkSepatu['nama_sepatu'] != null
-                      ? produkSepatu['nama_sepatu']
-                      : 'Unknown'; // Default name if null
-                  final ukuran =
-                      item['ukuran'] ?? 'Unknown'; // Default size if null
-                  final quantity = (item['quantity'] ?? 1)
-                      as int; // Default quantity if null
+                  final imageUrl = item['produkSepatu']
+                      ['image']; // Adjust the key to your image URL
 
                   return ListTile(
-                    title: Text(name),
-                    subtitle: Text('Size: $ukuran, Quantity: $quantity'),
+                    leading: Image.network(
+                      imageUrl,
+                      width: 50, // Set a width for the image
+                      height: 50, // Set a height for the image
+                      fit: BoxFit.cover, // Maintain the aspect ratio
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(Icons
+                            .error); // Display an error icon if the image fails to load
+                      },
+                    ),
+                    title: Text(item['produkSepatu']['nama_sepatu'],
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Size: ${item['ukuran']}',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: Text(
+                      'Qty: ${item['quantity']}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   );
                 },
               ),
             ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _processPayment(context),
-              child: Text('Pay Now'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: checkPaymentStatus,
-              child: Text('Check Payment Status'),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        height: 100, // Set your desired height here
+        decoration: BoxDecoration(
+          color: Colors.white, // Set the background color
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2), // Shadow color
+              spreadRadius: 7, // Spread radius of the shadow
+              blurRadius: 10, // Blur radius of the shadow
+              offset: Offset(0, 5), // Changes the position of the shadow (x, y)
             ),
           ],
+        ),
+        child: BottomAppBar(
+          child: Row(
+            mainAxisAlignment:
+                MainAxisAlignment.center, // Center the entire row
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment
+                    .center, // Center items vertically in the column
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.payment),
+                    onPressed: () {
+                      _processPayment(context);
+                    },
+                  ),
+                  Text('Process Payment',
+                      style: TextStyle(
+                          fontWeight: FontWeight
+                              .bold)), // Optional label for the first button
+                ],
+              ),
+              SizedBox(width: 40), // Space between columns
+              Column(
+                mainAxisAlignment: MainAxisAlignment
+                    .center, // Center items vertically in the column
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.check),
+                    onPressed: () {
+                      checkPaymentStatus();
+                    },
+                  ),
+                  Text('Check Payment Status',
+                      style: TextStyle(
+                          fontWeight: FontWeight
+                              .bold)), // Optional label for the second button
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

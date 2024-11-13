@@ -16,6 +16,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
   List<dynamic> shippedOrders = [];
   List<dynamic> receivedOrders = [];
   final FlutterSecureStorage storage = FlutterSecureStorage();
+  // To track ratings for each product
+  Map<int, double> productRatings = {};
 
   @override
   void initState() {
@@ -27,7 +29,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
   Future<void> fetchOrders() async {
     try {
       String? userId = await storage.read(key: 'userId');
-      final String url = 'http://192.168.1.6:5000/api/transaksi/user/$userId';
+      final String url = 'http://10.0.2.2:5000/api/transaksi/user/$userId';
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -52,17 +54,49 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
     }
   }
 
+  void _updateOrderStatus(int orderId, String newStatus) async {
+    final url = 'http://10.0.2.2:5000/api/transaksi/$orderId';
+    final body = jsonEncode({"status_pengiriman": newStatus});
+
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        print('Order status updated successfully');
+        fetchOrders();
+      } else {
+        print('Failed to update order status: ${response.body}');
+      }
+    } catch (error) {
+      print('Error updating order status: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Orders'),
+        title: Text(
+          'Pesanan Saya',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: 'Di Proses'),
-            Tab(text: 'Dikirim'),
-            Tab(text: 'Selesai'),
+            Tab(
+                child: Text('Di Proses',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+            Tab(
+                child: Text('Dikirim',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+            Tab(
+                child: Text('Selesai',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
           ],
         ),
       ),
@@ -89,37 +123,109 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
         final produkSepatu = order['produkSepatu'];
 
         return ListTile(
-          title: Text(produkSepatu != null
-              ? produkSepatu['nama_sepatu'] ?? 'Unknown Shoe'
-              : 'Unknown Shoe'),
-          subtitle: Text(
-            'Total: ${order['totalAmount']} \n'
-            'Status: ${order['paymentStatus']} \n'
-            'Size: ${order?['ukuran']}\n'
-            'Price: ${produkSepatu?['harga']}',
-            style: TextStyle(fontSize: 14),
+          contentPadding: EdgeInsets.all(8.0),
+          subtitle: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              produkSepatu?['image'] != null
+                  ? Container(
+                      margin: const EdgeInsets.only(right: 8.0),
+                      child: Image.network(
+                        produkSepatu['image'],
+                        width: 70,
+                        height: 70,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : SizedBox(width: 70),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      produkSepatu != null
+                          ? produkSepatu['nama_sepatu'] ?? 'Unknown Shoe'
+                          : 'Unknown Shoe',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Total: ${order['totalAmount']}',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Size: ${order?['ukuran']}',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Price: ${produkSepatu?['harga']}',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          leading: produkSepatu?['image'] != null
-              ? Image.network(produkSepatu['image'], width: 50, height: 50)
-              : null,
           isThreeLine: true,
-          trailing: order['status_pengiriman'] == 'diterima'
-              ? TextButton(
-                  onPressed: () {
-                    print(
-                        'Rate button pressed for produkSepatuId: ${produkSepatu['id']}'); // Debug print
-                    _showRatingDialog(produkSepatu['id']);
-                  },
-                  child: Text('Rate'),
-                )
-              : null,
+          trailing: _buildTrailingButton(order, produkSepatu),
         );
       },
     );
   }
 
+  Widget _buildTrailingButton(dynamic order, dynamic produkSepatu) {
+    // Check if the product has already been rated
+    if (productRatings.containsKey(produkSepatu['id'])) {
+      return Container(
+        margin: const EdgeInsets.only(top: 10.0),
+        child: TextButton(
+          onPressed: () {
+            // Optional: Show message that the user has already rated
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('You have already rated this product.')),
+            );
+          },
+          child: Text('Rated: ${productRatings[produkSepatu['id']]!} stars'),
+        ),
+      );
+    }
+
+    // Display the rating button only if the order is 'diterima'
+    if (order['status_pengiriman'] == 'diterima') {
+      return Container(
+        margin: const EdgeInsets.only(top: 10.0),
+        child: TextButton(
+          onPressed: () {
+            print(
+                'Rate button pressed for produkSepatuId: ${produkSepatu['id']}');
+            _showRatingDialog(produkSepatu['id']);
+          },
+          child: Text('Rate'),
+        ),
+      );
+    } else if (order['status_pengiriman'] == 'dikirim') {
+      return Container(
+        margin: const EdgeInsets.only(top: 25.0),
+        child: TextButton(
+          onPressed: () {
+            _updateOrderStatus(order['id'], 'diterima');
+          },
+          child: Text('Diterima',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
+
+    return SizedBox(); // Return an empty widget if no actions are needed
+  }
+
   void _showRatingDialog(int produkSepatuId) {
-    double rating = 0; // Initialize rating to 0
+    double rating = 0;
+    TextEditingController _commentController =
+        TextEditingController(); // Controller untuk komentar
 
     showDialog(
       context: context,
@@ -131,7 +237,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Please rate your product:'),
+                  Text('Please rate this product:'),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
@@ -143,26 +249,39 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
                         onPressed: () {
                           setState(() {
                             rating = index +
-                                1.0; // Update rating based on star index
+                                1.0; // Update rating berdasarkan jumlah bintang
                           });
-                          print(
-                              'Selected Rating: $rating'); // Print the selected rating
                         },
                       );
                     }),
+                  ),
+                  SizedBox(height: 16),
+
+                  // Tambahan kolom komentar
+                  TextField(
+                    controller: _commentController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText:
+                          'Write your comment', // Label untuk kolom komentar
+                      border:
+                          OutlineInputBorder(), // Membuat border pada kolom komentar
+                    ),
                   ),
                 ],
               ),
               actions: [
                 TextButton(
                   onPressed: () {
-                    if (rating > 0) {
-                      // Call your API to submit the rating here
-                      _submitRating(produkSepatuId.toString(), rating.round());
-                      Navigator.of(context).pop(); // Close the dialog
+                    if (rating > 0 && _commentController.text.isNotEmpty) {
+                      _submitRating(produkSepatuId.toString(), rating.round(),
+                          _commentController.text);
+                      Navigator.of(context).pop(); // Tutup dialog
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please select a rating')),
+                        SnackBar(
+                            content: Text(
+                                'Please select a rating and write a comment')),
                       );
                     }
                   },
@@ -170,7 +289,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop(); // Tutup dialog
                   },
                   child: Text('Cancel'),
                 ),
@@ -182,17 +301,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
     );
   }
 
-  void _submitRating(String produkSepatuId, int rating) async {
-    // Construct the URL
-    final url =
-        'http://192.168.1.6:5000/api/produk-sepatu/$produkSepatuId/rating';
-
-    // Construct the body
+  void _submitRating(String produkSepatuId, int rating, String comment) async {
+    final url = 'http://10.0.2.2:5000/api/produk-sepatu/$produkSepatuId/rating';
     final body = jsonEncode({"rating": rating});
-
-    // Print the URL and body for debugging
-    print('Submitting rating to URL: $url');
-    print('Request Body: $body');
 
     try {
       final response = await http.post(
@@ -202,14 +313,25 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
       );
 
       if (response.statusCode == 200) {
-        // Handle successful rating submission
+        // Save the rating for the product
+        setState(() {
+          productRatings[int.parse(produkSepatuId)] = rating.toDouble();
+        });
         print('Rating submitted successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Rating submitted: $rating stars')),
+        );
       } else {
-        // Handle error
         print('Failed to submit rating: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit rating')),
+        );
       }
     } catch (error) {
       print('Error submitting rating: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting rating')),
+      );
     }
   }
 }

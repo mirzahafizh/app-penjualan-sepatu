@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> login(BuildContext context) async {
     final response = await http.post(
-      Uri.parse('http://192.168.1.6:5000/api/users/login'), // Your API URL
+      Uri.parse('http://10.0.2.2:5000/api/users/login'), // Your API URL
       headers: {
         'Content-Type': 'application/json',
       },
@@ -66,8 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final String token = data['token'];
       final user = data['user']; // Get the user object
       final String email = user['email']; // Extract email from user object
-      final String fullName =
-          user['fullName']; // Extract fullName from user object
+      final String fullName = user['fullName'];
+      // Extract fullName from user object
       final String role = user['role']; // Extract role from user object
       final String userId =
           user['id'].toString(); // Extract userId and convert to string
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'assets/images/Screenshot (35).png', // Make sure this image exists in assets
                 height: 250.0,
               ),
-              SizedBox(height: 20.0),
+              SizedBox(height: 16.0),
 
               // Welcome text
               Text(

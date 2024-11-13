@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-import './screens/AccountSettingsScreen.dart'; // Import the AccountSettingsScreen
-import './screens/home_screen.dart'; // Import the HomeScreen
+import './screens/AccountSettingsScreen.dart';
+import './screens/MyOrdersScreen.dart';
+import './screens/home_screen.dart';
 import './screens/keranjang_screen.dart';
-import './screens/login_screen.dart'; // Import the LoginScreen
-import 'screens/MyOrdersScreen.dart';
+import './screens/login_screen.dart';
+import './screens/profile_screen.dart';
+import './screens/wishlist_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -17,17 +19,18 @@ class MyApp extends StatelessWidget {
       title: 'Login & Register',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        visualDensity:
-            VisualDensity.adaptivePlatformDensity, // Adjust visual density
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'Courier', // Set the default font family for the app
       ),
-      home: LoginScreen(), // Start with the LoginScreen
-      debugShowCheckedModeBanner: false, // Disable the debug banner
+      home: LoginScreen(),
+      debugShowCheckedModeBanner: false,
       routes: {
         '/login': (context) => LoginScreen(),
-        '/home': (context) => HomeScreen(), // No arguments passed here
-        '/accountSettings': (context) =>
-            AccountSettingsScreen(), // No arguments passed here
-        '/cart': (context) => KeranjangScreen(), // No arguments passed here
+        '/home': (context) => HomeScreen(),
+        '/accountSettings': (context) => AccountSettingsScreen(),
+        '/cart': (context) => KeranjangScreen(),
+        '/wishlist': (context) => WishlistScreen(),
+        '/profile': (context) => ProfilScreen(),
         '/transactionHistory': (context) => MyOrdersScreen(),
       },
     );

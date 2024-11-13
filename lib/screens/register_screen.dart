@@ -15,7 +15,7 @@ class RegisterScreen extends StatelessWidget {
   Future<void> register() async {
     final response = await http.post(
       Uri.parse(
-          'http://192.168.1.6:5000/api/users/register'), // Ganti dengan URL API Anda
+          'http://10.0.2.2:5000/api/users/register'), // Ganti dengan URL API Anda
       headers: {
         'Content-Type': 'application/json',
       },
